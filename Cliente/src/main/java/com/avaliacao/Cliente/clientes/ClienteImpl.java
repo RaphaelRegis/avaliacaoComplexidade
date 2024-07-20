@@ -3,6 +3,7 @@ package com.avaliacao.Cliente.clientes;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.LocalDateTime;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -33,34 +34,49 @@ public class ClienteImpl implements Cliente, Runnable {
 
         Gson gson = new Gson();
         String ruaJson = gson.toJson(mediaConsumoSemanaAnterior());
-        String encryptedJsonBytesBase64 = "";
+        String encryptedJsonBytesBase64 = encriptarJson(ruaJson);
+
+        //System.out.println("\nMinha chave Cliente: " + encryptedJsonBytesBase64);
+
+        String milli = encryptedJsonBytesBase64.substring(0, encryptedJsonBytesBase64.indexOf(" "));
+        encryptedJsonBytesBase64 = encryptedJsonBytesBase64.substring(encryptedJsonBytesBase64.indexOf(" ") +1);
 
         /* código para obter a chave publica */
-        String publicKeyBase64 = Unirest.get("http://localhost:8080/encriptacao/chavePublica").asString().getBody();
-
-        System.out.println("\n" + publicKeyBase64);
-
-
-        byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyBase64);
-
-        try {
-            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyBytes));
-
-            Cipher cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-            byte[] encryptedJsonBytes = cipher.doFinal(ruaJson.getBytes());
-            encryptedJsonBytesBase64 = Base64.getEncoder().encodeToString(encryptedJsonBytes);
-
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
+        /*
+         * String publicKeyBase64 =
+         * Unirest.get("http://localhost:8080/encriptacao/chavePublica").asString().
+         * getBody();
+         * 
+         * System.out.println("\n" + publicKeyBase64);
+         * 
+         * 
+         * byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyBase64);
+         * 
+         * try {
+         * PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new
+         * X509EncodedKeySpec(publicKeyBytes));
+         * 
+         * Cipher cipher = Cipher.getInstance("RSA");
+         * cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+         * byte[] encryptedJsonBytes = cipher.doFinal(ruaJson.getBytes());
+         * encryptedJsonBytesBase64 =
+         * Base64.getEncoder().encodeToString(encryptedJsonBytes);
+         * 
+         * } catch (Exception e) {
+         * System.out.println(e.getMessage());
+         * }
+         */
 
         // metodo que faz a requisicao HTTP POST atraves do Unirest
-        HttpResponse<JsonNode> response = Unirest
-                .post(URL_REQUISICAO)
-                .header("Content-Type", "application/json")
-                .body(encryptedJsonBytesBase64)
-                .asJson();
+        /*
+         * HttpResponse<JsonNode> response = Unirest
+         * .post(URL_REQUISICAO)
+         * .header("Content-Type", "application/json")
+         * .body(encryptedJsonBytesBase64)
+         * .asJson();
+         */
+
+        HttpResponse<JsonNode> response = fazerRequisicaoAoServidor(encryptedJsonBytesBase64, milli);
 
         // imprime o codigo de resposta da requisicao
         System.out.println("Response Code: " + response.getStatus());
@@ -89,4 +105,40 @@ public class ClienteImpl implements Cliente, Runnable {
 
     }
 
+    public String encriptarJson(String json) {
+
+        String milli = String.valueOf(LocalDateTime.now().getSecond());
+
+        String publicKeyBase64 = Unirest.get("http://localhost:8080/encriptacao/chavePublica/{entropia}")
+                .routeParam("entropia", milli)
+                .asString()
+                .getBody();
+
+        String encryptedJsonBytesBase64 = "";
+
+        byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyBase64);
+
+        try {
+            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            byte[] encryptedJsonBytes = cipher.doFinal(json.getBytes());
+            encryptedJsonBytesBase64 = Base64.getEncoder().encodeToString(encryptedJsonBytes);
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+        return milli+ " " + encryptedJsonBytesBase64;
+    }
+
+    public HttpResponse<JsonNode> fazerRequisicaoAoServidor(String jsonEncriptado, String milli) {
+        return Unirest
+                .post(URL_REQUISICAO+ "/{entropia}")
+                .routeParam("entropia", milli.toString())
+                .header("Content-Type", "application/json")
+                .body(jsonEncriptado)
+                .asJson();
+    }
 }

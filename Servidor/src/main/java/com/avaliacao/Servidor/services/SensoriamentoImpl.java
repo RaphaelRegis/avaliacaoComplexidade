@@ -22,9 +22,6 @@ public class SensoriamentoImpl implements Sensoriamento {
     @Override
     public void mediaConsumoSemanaAnterior(String[] resultado) {
 
-
-
-
         String idRua = resultado[0];
         String mediaSemanaMoradores = resultado[1];
 
@@ -32,9 +29,13 @@ public class SensoriamentoImpl implements Sensoriamento {
                 + mediaSemanaMoradores + " litros\n");
     }
 
-    public String[] desencriptar(String dadoEncriptado) throws Exception {
+    public String[] desencriptar(String dadoEncriptado, Integer entropia) throws Exception {
 
-        String privateKeyBase64 = Unirest.get("http://localhost:8080/encriptacao/chavePrivada").asString().getBody();
+        String privateKeyBase64 = Unirest.get("http://localhost:8080/encriptacao/chavePrivada/{entropia}")
+                .routeParam("entropia", String.valueOf(entropia))
+                .asString()
+                .getBody();
+
         byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyBase64);
 
         PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));

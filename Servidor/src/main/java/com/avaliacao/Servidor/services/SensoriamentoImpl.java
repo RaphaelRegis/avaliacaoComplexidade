@@ -1,5 +1,7 @@
 package com.avaliacao.Servidor.services;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -11,20 +13,16 @@ import org.springframework.stereotype.Service;
 
 import com.google.gson.Gson;
 
-import kong.unirest.Unirest;
-
 @Service
 public class SensoriamentoImpl implements Sensoriamento {
+
+    private static String CHAVE_PRIVADA_PATH = "D:\\R.R. Araújo\\IFBA\\5º SEMESTRE\\06- Complex Algo\\Unidade 3\\Avaliação\\Cenario 2\\avaliacaoComplexidade\\encriptacao\\chavePrivada.txt";
 
     // metodo d.4 da avaliacao 1 simplificado
     // recebe apenas os resultados do que o cliente processou e os imprime
     // portanto, possui complexidade O(1)
     @Override
     public void mediaConsumoSemanaAnterior(String[] resultado) {
-
-
-
-
         String idRua = resultado[0];
         String mediaSemanaMoradores = resultado[1];
 
@@ -32,9 +30,11 @@ public class SensoriamentoImpl implements Sensoriamento {
                 + mediaSemanaMoradores + " litros\n");
     }
 
+    // metodo para desencriptar o json da requisicao
+    @Override
     public String[] desencriptar(String dadoEncriptado) throws Exception {
 
-        String privateKeyBase64 = Unirest.get("http://localhost:8080/encriptacao/chavePrivada").asString().getBody();
+        String privateKeyBase64 = coletarChave();
         byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyBase64);
 
         PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
@@ -49,5 +49,21 @@ public class SensoriamentoImpl implements Sensoriamento {
 
         return resultado;
     }
+
+    // metodo para coletar a chave privada de arquivo externo
+    @Override
+    public String coletarChave() {
+
+        String chavePrivada = "";
+
+        try {
+            chavePrivada = new String(Files.readAllBytes(Paths.get(CHAVE_PRIVADA_PATH)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return chavePrivada;
+    }
+
 
 }

@@ -1,5 +1,7 @@
 package com.avaliacao.Cliente.clientes;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
@@ -21,6 +23,7 @@ public class ClienteImpl implements Cliente, Runnable {
     // campos da classe
     private Rua rua;
     private final String URL_REQUISICAO = "http://localhost:8081/servidor";
+    private static String CHAVE_PUBLICA_PATH = "D:\\R.R. Araújo\\IFBA\\5º SEMESTRE\\06- Complex Algo\\Unidade 3\\Avaliação\\Cenario 2\\avaliacaoComplexidade\\encriptacao\\chavePublica.txt";
 
     // construtor com complexidade O(1)
     public ClienteImpl(String nome) {
@@ -35,12 +38,10 @@ public class ClienteImpl implements Cliente, Runnable {
         String ruaJson = gson.toJson(mediaConsumoSemanaAnterior());
         String encryptedJsonBytesBase64 = "";
 
-        /* código para obter a chave publica */
-        String publicKeyBase64 = Unirest.get("http://localhost:8080/encriptacao/chavePublica").asString().getBody();
+        // metodo para obter a chave publica *
+        String publicKeyBase64 = coletarChave();
 
-        System.out.println("\n" + publicKeyBase64);
-
-
+        // codigo para encriptar o json
         byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyBase64);
 
         try {
@@ -55,15 +56,9 @@ public class ClienteImpl implements Cliente, Runnable {
             System.out.println(e.getMessage());
         }
 
-        // metodo que faz a requisicao HTTP POST atraves do Unirest
-        HttpResponse<JsonNode> response = Unirest
-                .post(URL_REQUISICAO)
-                .header("Content-Type", "application/json")
-                .body(encryptedJsonBytesBase64)
-                .asJson();
+        // chama o metodo para fazer as requisicoes
+        enviar(encryptedJsonBytesBase64);
 
-        // imprime o codigo de resposta da requisicao
-        System.out.println("Response Code: " + response.getStatus());
     }
 
     // ira processar os dados e retornar um array com os parametros da url
@@ -89,4 +84,34 @@ public class ClienteImpl implements Cliente, Runnable {
 
     }
 
+    // coleta a chave publica a partir de arquivo externo
+    @Override
+    public String coletarChave() {
+        String chavePublica = "";
+
+        try {
+            chavePublica = new String(Files.readAllBytes(Paths.get(CHAVE_PUBLICA_PATH)));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return chavePublica;
+    }
+
+    // metodo que encripta o json
+    /*public String encriptar() {
+        
+    }*/
+
+    // metodo que faz a requisicao HTTP POST atraves do Unirest
+    private void enviar(String encryptedJsonBytesBase64) {
+        HttpResponse<JsonNode> response = Unirest
+                .post(URL_REQUISICAO)
+                .header("Content-Type", "application/json")
+                .body(encryptedJsonBytesBase64)
+                .asJson();
+
+        // imprime o codigo de resposta da requisicao
+        System.out.println("Response Code: " + response.getStatus());
+    }
 }

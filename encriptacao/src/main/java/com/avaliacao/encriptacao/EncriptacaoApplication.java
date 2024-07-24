@@ -1,13 +1,18 @@
 package com.avaliacao.encriptacao;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.avaliacao.encriptacao.services.EncriptacaoService;
+import com.avaliacao.encriptacao.services.EncriptacaoServiceImpl;
 
-@SpringBootApplication
 public class EncriptacaoApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(EncriptacaoApplication.class, args);
+	public static EncriptacaoService getEncriptacaoService() throws Exception {
+		return new EncriptacaoServiceImpl();
+	}
+
+	public static void main(String[] args) throws Exception {
+		
+		EncriptacaoService encriptacaoService = getEncriptacaoService();
+		encriptacaoService.salvarParDeChaves();
 	}
 
 }

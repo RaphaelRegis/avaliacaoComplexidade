@@ -5,6 +5,7 @@ import com.avaliacao.encriptacao.services.EncriptacaoServiceImpl;
 
 public class EncriptacaoApplication {
 
+	// metodo com complexidade O(1)
 	public static EncriptacaoService getEncriptacaoService() throws Exception {
 		return new EncriptacaoServiceImpl();
 	}
@@ -12,7 +13,13 @@ public class EncriptacaoApplication {
 	public static void main(String[] args) throws Exception {
 		
 		EncriptacaoService encriptacaoService = getEncriptacaoService();
-		encriptacaoService.salvarParDeChaves();
+		try {
+			encriptacaoService.salvarParDeChaves();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		System.out.println("Par de chaves salvo!");
 	}
 
 }

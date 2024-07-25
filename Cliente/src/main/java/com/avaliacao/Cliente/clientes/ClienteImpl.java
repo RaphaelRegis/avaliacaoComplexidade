@@ -23,37 +23,31 @@ public class ClienteImpl implements Cliente, Runnable {
     // campos da classe
     private Rua rua;
     private final String URL_REQUISICAO = "http://localhost:8081/servidor";
-    private static String CHAVE_PUBLICA_PATH = "D:\\R.R. Araújo\\IFBA\\5º SEMESTRE\\06- Complex Algo\\Unidade 3\\Avaliação\\Cenario 2\\avaliacaoComplexidade\\encriptacao\\chavePublica.txt";
+    private static String CHAVE_PUBLICA_PATH = "src\\main\\java\\com\\avaliacao\\Cliente\\chavePublica.txt";
 
     // construtor com complexidade O(1)
     public ClienteImpl(String nome) {
         this.rua = new Rua("Rua " + nome);
     }
 
-    // ao iniciar a thread, ele fará a requisicao - complexidade O(1)
+    // ao iniciar a thread, ele farah a requisicao - complexidade O(1)
     @Override
     public void run() {
 
+        // processa os dados e transforma-os em json
         Gson gson = new Gson();
         String ruaJson = gson.toJson(mediaConsumoSemanaAnterior());
         String encryptedJsonBytesBase64 = "";
 
-        // metodo para obter a chave publica *
-        String publicKeyBase64 = coletarChave();
-
-        // codigo para encriptar o json
-        byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyBase64);
-
         try {
-            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+            // metodo para obter a chave publica
+            String publicKeyBase64 = coletarChave();
 
-            Cipher cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-            byte[] encryptedJsonBytes = cipher.doFinal(ruaJson.getBytes());
-            encryptedJsonBytesBase64 = Base64.getEncoder().encodeToString(encryptedJsonBytes);
+            // metodo para encriptar o json
+            encryptedJsonBytesBase64 = encriptar(publicKeyBase64, ruaJson);
 
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
 
         // chama o metodo para fazer as requisicoes
@@ -85,26 +79,35 @@ public class ClienteImpl implements Cliente, Runnable {
     }
 
     // coleta a chave publica a partir de arquivo externo
+    // a leitura itera sobre os caracteres, conferindo ao metodo a complexidade O(N)
     @Override
-    public String coletarChave() {
+    public String coletarChave() throws Exception {
         String chavePublica = "";
-
-        try {
-            chavePublica = new String(Files.readAllBytes(Paths.get(CHAVE_PUBLICA_PATH)));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        chavePublica = new String(Files.readAllBytes(Paths.get(CHAVE_PUBLICA_PATH)));
         return chavePublica;
     }
 
     // metodo que encripta o json
-    /*public String encriptar() {
+    // a encriptacao com RSA possui complexidade O(N^2)
+    @Override
+    public String encriptar(String publicKeyBase64, String ruaJson) throws Exception {
+        byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyBase64);
+
+        PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKeyBytes));
         
-    }*/
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        
+        byte[] encryptedJsonBytes = cipher.doFinal(ruaJson.getBytes());
+        
+        return Base64.getEncoder().encodeToString(encryptedJsonBytes);
+
+    }
 
     // metodo que faz a requisicao HTTP POST atraves do Unirest
-    private void enviar(String encryptedJsonBytesBase64) {
+    // possui complexidade O(1)
+    @Override
+    public void enviar(String encryptedJsonBytesBase64) {
         HttpResponse<JsonNode> response = Unirest
                 .post(URL_REQUISICAO)
                 .header("Content-Type", "application/json")

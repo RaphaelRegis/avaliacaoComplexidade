@@ -16,7 +16,7 @@ import com.google.gson.Gson;
 @Service
 public class SensoriamentoImpl implements Sensoriamento {
 
-    private static String CHAVE_PRIVADA_PATH = "D:\\R.R. Araújo\\IFBA\\5º SEMESTRE\\06- Complex Algo\\Unidade 3\\Avaliação\\Cenario 2\\avaliacaoComplexidade\\encriptacao\\chavePrivada.txt";
+    private static String CHAVE_PRIVADA_PATH = "src\\main\\java\\com\\avaliacao\\Servidor\\chavePrivada.txt";
 
     // metodo d.4 da avaliacao 1 simplificado
     // recebe apenas os resultados do que o cliente processou e os imprime
@@ -31,6 +31,7 @@ public class SensoriamentoImpl implements Sensoriamento {
     }
 
     // metodo para desencriptar o json da requisicao
+    // a desencriptacao com RSA possui complexidade O(N^3)
     @Override
     public String[] desencriptar(String dadoEncriptado) throws Exception {
 
@@ -51,19 +52,12 @@ public class SensoriamentoImpl implements Sensoriamento {
     }
 
     // metodo para coletar a chave privada de arquivo externo
+    // a leitura itera sobre os caracteres, conferindo ao metodo a complexidade O(N)
     @Override
-    public String coletarChave() {
-
+    public String coletarChave() throws Exception {
         String chavePrivada = "";
-
-        try {
-            chavePrivada = new String(Files.readAllBytes(Paths.get(CHAVE_PRIVADA_PATH)));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        chavePrivada = new String(Files.readAllBytes(Paths.get(CHAVE_PRIVADA_PATH)));
         return chavePrivada;
     }
-
 
 }

@@ -4,6 +4,6 @@ public interface Sensoriamento {
 
     void mediaConsumoSemanaAnterior(String[] resultado);
     String[] desencriptar(String dadoEncriptado) throws Exception;
-    String coletarChave();
+    String coletarChave() throws Exception;
     
 }

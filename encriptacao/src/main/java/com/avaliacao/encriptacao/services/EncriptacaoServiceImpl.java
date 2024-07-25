@@ -1,103 +1,63 @@
 package com.avaliacao.encriptacao.services;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Base64;
-import org.springframework.stereotype.Service;
 
-@Service
 public class EncriptacaoServiceImpl implements EncriptacaoService {
 
     private KeyPair keyPair;
+    private static String VIDEO_PATH = "src\\main\\java\\com\\avaliacao\\encriptacao\\video\\meuVideo.mp4";
+    private static String PRIVATE_KEY_PATH = "..\\Servidor\\src\\main\\java\\com\\avaliacao\\Servidor";
+    private static String PUBLIC_KEY_PATH = "..\\Cliente\\src\\main\\java\\com\\avaliacao\\Cliente";
 
+    // construtor 
+    // possui notação Big O variante de acordo com o trecho do video que sera usado como semente de encriptacao
     public EncriptacaoServiceImpl() throws Exception {
-        byte[] videoBytes = Files.readAllBytes(Paths.get(
-                "src\\main\\java\\com\\avaliacao\\encriptacao\\video\\meuVideo.mp4"));
 
-        System.out.println("Meu rolão" + Arrays.asList(videoBytes));
-        SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
-        secureRandom.setSeed(videoBytes);
+        // le o video
+        byte[] videoBytes = Files.readAllBytes(Paths.get(
+                VIDEO_PATH));
+
+        // coleta uma fracao do video
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] videoFractionBytes = new byte[secureRandom.nextInt(0, videoBytes.length - 1)];
+
+        for (int i = 0; i < videoFractionBytes.length; i++) {
+            videoFractionBytes[i] = videoBytes[i];
+        }
+
+        // gera o par de chaves com a fracao do video
+        secureRandom = SecureRandom.getInstance("SHA1PRNG");
+        secureRandom.setSeed(videoFractionBytes);
 
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048, secureRandom);
         this.keyPair = keyPairGenerator.generateKeyPair();
-
     }
 
+    // metodo que salva a chave publica no Cliente e a chave privada no Servidor
+    // complexidade O(N), pois itera sobre os caracteres das strings representantes das chaves
     @Override
-    public String getPublicKey() {
-        PublicKey publicKey = keyPair.getPublic();
-        return Base64.getEncoder().encodeToString(publicKey.getEncoded());
-    }
+    public void salvarParDeChaves() throws Exception {
 
-    @Override
-    public String getPrivateKey() {
-        PrivateKey privateKey = keyPair.getPrivate();
-        return Base64.getEncoder().encodeToString(privateKey.getEncoded());
-    }
+        String privateKey = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
+        String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
 
-    /*
-     * @Autowired
-     * private ChavePrivadaRepository chavePrivadaRepository;
-     * 
-     * private final String videoPath =
-     * "src\\main\\java\\com\\avaliacao\\encriptacao\\video\\meuVideo.mp4";
-     * 
-     * public String getPublicKey() throws Exception {
-     * KeyPair keyPair = generateKeyPair();
-     * PublicKey publicKey = keyPair.getPublic();
-     * 
-     * String chavePublica =
-     * Base64.getEncoder().encodeToString(publicKey.getEncoded());
-     * 
-     * ChavePrivada chavePrivada = ChavePrivada.builder()
-     * .chavePrivada(Base64.getEncoder().encodeToString(keyPair.getPrivate().
-     * getEncoded()))
-     * .build();
-     * 
-     * chavePrivadaRepository.save(chavePrivada);
-     * 
-     * //return Base64.getEncoder().encodeToString(publicKey.getEncoded());
-     * return chavePrivada.getId()+ " " + chavePublica;
-     * }
-     * 
-     * public String getPrivateKey(Integer id) throws Exception {
-     * /*KeyPair keyPair = generateKeyPair();
-     * PrivateKey privateKey = keyPair.getPrivate();
-     * return Base64.getEncoder().encodeToString(privateKey.getEncoded());
-     * return chavePrivadaRepository.findById(id).get().getChavePrivada();
-     * 
-     * }
-     * 
-     * private KeyPair generateKeyPair() throws Exception {
-     * byte[] entropy = getEntropyFromVideo();
-     * 
-     * // Gere chave pública e privada usando os bytes de entropia como semente
-     * SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
-     * secureRandom.setSeed(entropy);
-     * 
-     * KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-     * keyPairGenerator.initialize(2048, secureRandom);
-     * return keyPairGenerator.generateKeyPair();
-     * }
-     * 
-     * private byte[] getEntropyFromVideo() throws IOException {
-     * byte[] videoBytes = Files.readAllBytes(Paths.get(videoPath));
-     * Random random = new Random();
-     * 
-     * // Escolher um segmento aleatório do vídeo
-     * int segmentSize = 128; // Tamanho do segmento de bytes para a entropia
-     * int randomStart = random.nextInt(videoBytes.length - segmentSize);
-     * byte[] entropy = new byte[segmentSize];
-     * System.arraycopy(videoBytes, randomStart, entropy, 0, segmentSize);
-     * 
-     * return entropy;
-     * }
-     */
+        BufferedWriter escritorChavePrivada = new BufferedWriter(
+                new FileWriter(PRIVATE_KEY_PATH + "\\chavePrivada.txt"));
+        escritorChavePrivada.write(privateKey);
+        escritorChavePrivada.close();
+
+        BufferedWriter escritorChavePublica = new BufferedWriter(
+                new FileWriter(PUBLIC_KEY_PATH + "\\chavePublica.txt"));
+        escritorChavePublica.write(publicKey);
+        escritorChavePublica.close();
+
+    }
 }
